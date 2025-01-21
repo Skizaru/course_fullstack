@@ -1,0 +1,24 @@
+Get single Company endpoint
+---
+tags:
+  - Companies
+parameters:
+  - in: formData
+    name: name
+    type: string
+    required: true
+definitions:
+  Company:
+    type: object
+    properties:
+      id:
+        type: string
+      name:
+        type: string
+responses:
+  200:
+    description: A company matching the specified id
+    schema:
+      $ref: '#/definitions/Company'
+    examples:
+      - {"id": "1234", "name": "Nicholai Hel"}

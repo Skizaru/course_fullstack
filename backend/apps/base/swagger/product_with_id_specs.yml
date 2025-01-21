@@ -1,0 +1,30 @@
+Get single Product endpoint
+---
+tags:
+  - Products
+parameters:
+  - in: path
+    name: id
+    type: string
+    required: true
+definitions:
+  Product:
+    type: object
+    properties:
+      id:
+        type: string
+      name:
+        type: string
+      comment:
+        type: string
+      quantity:
+        type: string
+      company_id:
+        type: string
+responses:
+  200:
+    description: A product matching the specified id
+    schema:
+      $ref: '#/definitions/Product'
+    examples:
+      - {"id": "1234", "name": "Keyboard Roccat", "comment": "Nice", "company_id": "4321"}

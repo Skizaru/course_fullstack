@@ -1,6 +1,4 @@
 # -*- encoding: utf-8 -*-
-import sys
-
 from flask import render_template, request, jsonify
 from flask_login import (
     current_user,
@@ -12,9 +10,10 @@ from apps import db
 from apps import login_manager
 from apps.authentication.forms import LoginForm
 from apps.base import blueprint
-from apps.base.models import *
 import re
 import os
+
+from apps.base.models import Company, Product
 
 basedir = os.path.abspath(os.path.dirname(__file__))
 
@@ -34,75 +33,93 @@ def to_pascal_case(s):
 def has_permission(model, method):
     if method in ['POST', 'PATCH', 'DELETE']:
         return current_user.is_authenticated
-    if model in ['Customer', 'Product']:
+    if model in ['Company', 'Product']:
         return True
     return current_user.is_authenticated
 
-
-@blueprint.route('/company/', endpoint='user-without-id', methods=['GET'])
-@swag_from('swagger/cmp_without_id_specs.yml', endpoint='base_blueprint.user-without-id', methods=['GET'])
-@blueprint.route('/company/<int:cmp_id>', endpoint='user-with-id', methods=['GET'])
-@swag_from('swagger/cmp_with_id_specs.yml', endpoint='base_blueprint.user-with-id', methods=['GET'])
-@blueprint.route('/company/', methods=['POST'])
-@blueprint.route('/company/<int:cmp_id>', methods=['PATCH'])
-@blueprint.route('/company/<int:cmp_id>', methods=['DELETE'])
+@blueprint.route('/company/', endpoint='company-without-id', methods=['GET'])
+@swag_from('swagger/cmp_without_id_specs.yml', endpoint='base_blueprint.company-without-id', methods=['GET'])
+@blueprint.route('/company/<int:cmp_id>', endpoint='company-with-id', methods=['GET'])
+@swag_from('swagger/cmp_with_id_specs.yml', endpoint='base_blueprint.company-with-id', methods=['GET'])
+@blueprint.route('/company/', endpoint='company-create', methods=['POST'])
+@swag_from('swagger/cmp_create_specs.yml', endpoint='base_blueprint.company-create', methods=['POST'])
 def company(cmp_id=None):
-    pass
-
-
-@blueprint.route('/<model_name>/', methods=['GET'])
-@blueprint.route('/<model_name>/<int:obj_id>', methods=['GET'])
-@blueprint.route('/<model_name>/', methods=['POST'])
-@blueprint.route('/<model_name>/<int:obj_id>', methods=['PATCH'])
-@blueprint.route('/<model_name>/<int:obj_id>', methods=['DELETE'])
-def model_api(model_name, obj_id=None):
-    model_name = to_pascal_case(model_name)
-    form_name = f'{model_name}Form'
-    model = getattr(sys.modules[__name__], model_name)
-    form_class = getattr(sys.modules[__name__], form_name)
-
-    if not has_permission(model_name, request.method):
+    if not has_permission('Company', request.method):
         return "You need to be authenticated", 401
     if request.method == 'GET':
-        filter_on_fields = {field for field in request.args if hasattr(model, field)}
-        qs = model.query
+        filter_on_fields = {field for field in request.args if hasattr(Company, field)}
+        qs = Company.query
         if filter_on_fields:
             # Add filters to query if required
             for field in filter_on_fields:
-                expression = (getattr(model, field) == request.args.get(field))
+                expression = (getattr(Company, field) == request.args.get(field))
                 qs = qs.filter(expression)
-
-        if obj_id is not None:
-            instance = model.query.get(obj_id)
+        if cmp_id is not None:
+            instance = Company.query.get(cmp_id)
             return jsonify(instance.serialize)
         else:
             return jsonify(data=[i.serialize for i in qs.all()])
+    if request.method == 'POST' and request.form:
+        name = request.form.get('name')
+        cmp_instance = Company(name=name)
+        db.session.add(cmp_instance)
+        db.session.commit()
+        return jsonify(cmp_instance.serialize)
 
-    if request.method == 'POST':
-        form = form_class(request.form, obj=model)
-        if form.validate_on_submit():
-            instance = model()
-            form.populate_obj(instance)
-            db.session.add(instance)
-            db.session.commit()
+
+@blueprint.route('/product/', endpoint='product-without-id', methods=['GET'])
+@swag_from('swagger/product_without_id_specs.yml', endpoint='base_blueprint.product-without-id', methods=['GET'])
+@blueprint.route('/product/<int:product_id>', endpoint='product-with-id', methods=['GET'])
+@swag_from('swagger/product_with_id_specs.yml', endpoint='base_blueprint.product-with-id', methods=['GET'])
+@blueprint.route('/product/', endpoint='product-create', methods=['POST'])
+@swag_from('swagger/product_create_specs.yml', endpoint='base_blueprint.product-create', methods=['POST'])
+@blueprint.route('/product/<int:product_id>', endpoint='product-update', methods=['PATCH'])
+@swag_from('swagger/product_create_specs.yml', endpoint='base_blueprint.product-update', methods=['PATCH'])
+@blueprint.route('/product/<int:product_id>', endpoint='product-delete', methods=['DELETE'])
+@swag_from('swagger/product_with_id_specs.yml', endpoint='base_blueprint.product-delete', methods=['DELETE'])
+def product(product_id=None):
+    if not has_permission('Product', request.method):
+        return "You need to be authenticated", 401
+    if request.method == 'GET':
+        filter_on_fields = {field for field in request.args if hasattr(Product, field)}
+        qs = Product.query
+        if filter_on_fields:
+            # Add filters to query if required
+            for field in filter_on_fields:
+                expression = (getattr(Product, field) == request.args.get(field))
+                qs = qs.filter(expression)
+        if product_id is not None:
+            instance = Product.query.get(product_id)
             return jsonify(instance.serialize)
+        else:
+            return jsonify(data=[i.serialize for i in qs.all()])
+    if request.method == 'POST' and request.form:
+        name = request.form.get('name')
+        comment = request.form.get('comment')
+        quantity = request.form.get('quantity')
+        company_id = request.form.get('company_id')
+        product_instance = Product(name=name, comment=comment, quantity=quantity, company_id=company_id)
+        db.session.add(product_instance)
+        db.session.commit()
+        return jsonify(product_instance.serialize)
 
     if request.method == 'PATCH':
-        form = form_class(request.form, obj=model)
-        if form.validate_on_submit():
-            instance = model.query.get_or_404(obj_id)
-            form.populate_obj(instance)
-            db.session.commit()
-            return jsonify(instance.serialize)
+        product_instance = Product.query.get_or_404(product_id)
+        product_instance.name = request.form.get('name') if request.form.get('name') else product_instance.name
+        product_instance.comment = request.form.get('comment') if request.form.get('comment') else product_instance.comment
+        product_instance.quantity = request.form.get('quantity') if request.form.get('quantity') else product_instance.quantity
 
-    if request.method == 'DELETE' and obj_id is not None:
-        instance = model.query.get(obj_id)
-        if instance is not None:
-            db.session.delete(instance)
+        db.session.commit()
+        return jsonify(product_instance.serialize)
+
+    if request.method == 'DELETE' and product_id is not None:
+        product_instance = Product.query.get(product_id)
+        if product_instance is not None:
+            db.session.delete(product_instance)
             db.session.commit()
-            return jsonify({'message': f'{model_name} deleted successfully'}), 200
+            return jsonify({'message': 'Product deleted successfully'}), 200
         else:
-            return jsonify({'message': f'{model_name} not found'}), 404
+            return jsonify({'message': 'Product not found'}), 404
 
 
 # Errors

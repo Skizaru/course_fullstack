@@ -19,7 +19,7 @@ class Users(db.Model, UserMixin):
     password = db.Column(db.LargeBinary)
 
     # Relationships
-    company_id = db.Column(db.Integer, db.ForeignKey('company.id'), nullable=False)
+    company_id = db.Column(db.Integer, db.ForeignKey('company.id'), nullable=True)
     company = db.relationship('Company', backref=db.backref('users', lazy=True, cascade='all, delete'))
 
     def __init__(self, **kwargs):

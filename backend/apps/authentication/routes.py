@@ -17,6 +17,7 @@ from apps.authentication.forms import LoginForm, CreateAccountForm
 from apps.authentication.util import verify_pass
 
 from apps.authentication.models import Users
+from flasgger.utils import swag_from
 
 
 @blueprint.route('/')
@@ -27,6 +28,8 @@ def route_default():
 # Login & Registration
 
 @blueprint.route('/login', methods=['GET', 'POST'])
+@swag_from('swagger/login_specs.yml', methods=['GET'])
+@swag_from('swagger/login_specs.yml', methods=['POST'])
 def login():
     login_form = LoginForm(request.form)
     if 'login' in request.form:

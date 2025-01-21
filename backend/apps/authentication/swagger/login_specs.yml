@@ -1,0 +1,24 @@
+Login route for user
+---
+tags:
+  - Auth
+parameters:
+  - in: path
+    name: username
+    type: string
+    required: true
+  - in: path
+    name: password
+    type: string
+    format: password
+    required: true
+responses:
+  200:
+    description: A single user item (um único usuário)
+    schema:
+      id: rec_username
+      properties:
+        username:
+          type: string
+          description: The username of the user
+          default: 'steve-harris'

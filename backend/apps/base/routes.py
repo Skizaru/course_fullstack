@@ -5,6 +5,7 @@ from flask import render_template, request, jsonify
 from flask_login import (
     current_user,
 )
+from flasgger.utils import swag_from
 
 from apps import db
 
@@ -36,6 +37,17 @@ def has_permission(model, method):
     if model in ['Customer', 'Product']:
         return True
     return current_user.is_authenticated
+
+
+@blueprint.route('/company/', endpoint='user-without-id', methods=['GET'])
+@swag_from('swagger/cmp_without_id_specs.yml', endpoint='base_blueprint.user-without-id', methods=['GET'])
+@blueprint.route('/company/<int:cmp_id>', endpoint='user-with-id', methods=['GET'])
+@swag_from('swagger/cmp_with_id_specs.yml', endpoint='base_blueprint.user-with-id', methods=['GET'])
+@blueprint.route('/company/', methods=['POST'])
+@blueprint.route('/company/<int:cmp_id>', methods=['PATCH'])
+@blueprint.route('/company/<int:cmp_id>', methods=['DELETE'])
+def company(cmp_id=None):
+    pass
 
 
 @blueprint.route('/<model_name>/', methods=['GET'])

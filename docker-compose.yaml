@@ -1,0 +1,91 @@
+services:
+  db_course_fullstack:
+    image: postgres:latest
+    environment:
+      - ENGINE=postgresql,
+      - POSTGRES_DB=${DB_NAME}
+      - POSTGRES_USER=${DB_USERNAME}
+      - POSTGRES_PASSWORD=${DB_PASS}
+      - PGDATA=/var/lib/postgresql/data/pgdata
+    volumes:
+      - ./dockerdata/postgres:/var/lib/postgresql/data
+    ports:
+      - 5440:5432
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - course_fullstack
+
+  db_migration_course_fullstack:
+    container_name: db_migration_course_fullstack
+    build: ./backend
+    command: >
+      bash -c "flask db upgrade"
+    env_file:
+      - .env
+    depends_on:
+      db_course_fullstack:
+        condition: service_healthy
+    networks:
+      - course_fullstack
+
+  backend_course_fullstack:
+    container_name: backend_course_fullstack
+    restart: always
+    env_file: .env
+    build: ./backend
+    command: gunicorn --config gunicorn-cfg.py --reload run:app
+    ports:
+      - 5005:5005
+    volumes:
+      - ./backend/migrations:/code/migrations
+    develop:
+      watch:
+        - action: sync
+          path: ./backend
+          target: /code
+        - action: rebuild
+          path: requirements.txt
+        - action: rebuild
+          path: .env
+    networks:
+      - course_fullstack
+    depends_on:
+      db_migration_course_fullstack:
+        condition: service_completed_successfully
+
+  hasura:
+    container_name: hasura
+    image: hasura/graphql-engine:latest.cli-migrations-v3
+    ports:
+      - 8080:8080
+    volumes:
+      - ./hasura:/hasura
+    depends_on:
+      db_migration_course_fullstack:
+        condition: service_completed_successfully
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -f http://127.0.0.1:8080/healthz || exit 1" ]
+      interval: 15s
+      timeout: 15s
+      retries: 10
+    environment:
+      HASURA_GRAPHQL_MIGRATIONS_DIR: /hasura/migrations
+      HASURA_GRAPHQL_METADATA_DIR: /hasura/metadata
+      HASURA_GRAPHQL_DATABASE_URL: ${DB_URL}
+      HASURA_GRAPHQL_ENABLE_CONSOLE: "true"
+      HASURA_GRAPHQL_DEV_MODE: "true"
+      HASURA_GRAPHQL_ENABLED_LOG_TYPES: startup, http-log, webhook-log, websocket-log
+      HASURA_GRAPHQL_LOG_LEVEL: info
+      HASURA_GRAPHQL_ADMIN_SECRET: ${GRAPHQL_ADMIN_SECRET}
+    networks:
+      - course_fullstack
+
+networks:
+  course_fullstack:
+    name: course_fullstack
+    driver: bridge

@@ -1,0 +1,13 @@
+Flask
+SQLAlchemy
+sqlalchemy-utils
+flask-cors
+flask-bcrypt
+flask-migrate
+flask_login
+flask_wtf
+gunicorn
+gevent
+flask-restx
+psycopg2
+flasgger

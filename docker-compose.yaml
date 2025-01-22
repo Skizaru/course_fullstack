@@ -57,6 +57,22 @@ services:
       db_migration_course_fullstack:
         condition: service_completed_successfully
 
+  frontend_course_fullstack:
+    container_name: frontend_course_fullstack
+    restart: always
+    build: ./frontend
+    ports:
+      - 3000:3000
+    depends_on:
+      - backend_course_fullstack
+    develop:
+      watch:
+        - action: sync
+          path: ./frontend
+          target: /app
+    networks:
+      - course_fullstack
+
   hasura:
     container_name: hasura
     image: hasura/graphql-engine:latest.cli-migrations-v3

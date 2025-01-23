@@ -31,3 +31,5 @@ Au lancement, le service `db_migration_course_fullstack` s'occupera d'appliquer 
 Après le lancement, accèdez au backend flask à l'URL suivante pour vous créer un compte http://localhost:5005/register. Vous pourrez ensuite aller sur http://localhost:5005/login pour vous connecter.
 L'API swagger est disponible à l'URL suivante :  
 http://localhost:5005/apidocs
+
+Depuis Swagger, créez une `Company` depuis l'endpoint correspondant pour pouvoir par la suite y associer des produits depuis le frontend.
